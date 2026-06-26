@@ -3,5 +3,5 @@ uvicorn[standard]
 python-dotenv
 PyJWT
 cryptography
-anthropic
 httpx
+groq
