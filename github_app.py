@@ -7,26 +7,23 @@ from dotenv import load_dotenv
 load_dotenv()
 
 APP_ID = os.getenv("GITHUB_APP_ID")
-PRIVATE_KEY_PATH = "private-key.pem"
 
 
 def generate_jwt():
-    """Creates a signed 'ID card' proving this request comes from our app."""
-    with open(PRIVATE_KEY_PATH, "r") as f:
-        private_key = f.read()
+    """Creates a signed JWT using private key from environment variable."""
+    private_key = os.getenv("GITHUB_PRIVATE_KEY")
 
     now = int(time.time())
     payload = {
-        "iat": now - 60,          # issued 60 sec ago (avoids clock issues)
-        "exp": now + (10 * 60),   # valid for 10 minutes
-        "iss": APP_ID             # your App's ID
+        "iat": now - 60,
+        "exp": now + (10 * 60),
+        "iss": APP_ID
     }
 
     return jwt.encode(payload, private_key, algorithm="RS256")
 
 
 async def get_installation_token(installation_id: int):
-    """Exchanges the JWT for a real access token GitHub will accept."""
     jwt_token = generate_jwt()
 
     headers = {
@@ -43,7 +40,6 @@ async def get_installation_token(installation_id: int):
 
 
 async def get_pr_diff(repo_full_name: str, pr_number: int, installation_token: str):
-    """Fetches the actual code changes (the diff) from a Pull Request."""
     headers = {
         "Authorization": f"Bearer {installation_token}",
         "Accept": "application/vnd.github.v3.diff"
@@ -54,4 +50,4 @@ async def get_pr_diff(repo_full_name: str, pr_number: int, installation_token: s
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=headers)
         response.raise_for_status()
-        return response.text   # raw diff text — the actual code changes
+        return response.text
